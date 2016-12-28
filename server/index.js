@@ -9,13 +9,21 @@ var app = express();
 
 app.use(bodyParser.json());
 
+app.get('/api/todos', function(req, res){
+    Todo.find().then(function(todos){
+        res.send({todos: todos});
+    }).catch(function(err){
+        res.status(400).send(err);
+    });
+});
+
 app.post('/api/todos', function(req, res){
-    var todo = new Todo({
+    var newTodo = new Todo({
         text: req.body.text
     });
     
-    todo.save().then(function(doc){
-        res.send(doc);
+    newTodo.save().then(function(todo){
+        res.send(todo);
     }).catch(function(err){
         res.status(400).send(err);
     });
