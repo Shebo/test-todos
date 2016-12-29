@@ -34,7 +34,7 @@ app.get('/api/todos/:id', function(req, res){
     }).then(function(todo){
         res.send({todo: todo});
     }).catch(function(err){
-        res.status(404).send(err);
+        res.status(404).send({err: err});
     });
 });
 
@@ -46,7 +46,7 @@ app.post('/api/todos', function(req, res){
     newTodo.save().then(function(todo){
         res.send(todo);
     }).catch(function(err){
-        res.status(400).send(err);
+        res.status(400).send({err: err});
     });
 });
 

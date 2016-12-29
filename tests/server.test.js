@@ -1,22 +1,25 @@
 const expect = require('expect');
 const request = require('supertest');
+const ObjectId = require('mongoose').Types.ObjectId;
 
 var {app} = require('../server');
 var {Todo} = require('../server/models/Todo');
 var {User} = require('../server/models/User');
 
-var todos = [
+var mockTodos = [
     {
+        _id: ObjectId(),
         text: 'First Test Todo'
     },
     {
+        _id: ObjectId(),
         text: 'Second Test Todo'
     }
 ];
 
 beforeEach(function(done){
     Todo.remove({}, function(){
-        return Todo.insertMany(todos).then(function(){
+        return Todo.insertMany(mockTodos).then(function(){
             done();
         });
     });
@@ -66,9 +69,35 @@ describe('GET /api/todos', function(){
         request(app).get('/api/todos')
             .expect(200)
             .expect(function(res){
-                // console.log(res.body.todos);
-                // console.log(expect(res.body.todos).toBeAn(String));
                 expect(res.body.todos.length).toBe(2);
+            }).end(done);
+    });
+});
+
+describe('GET /api/todos/:id', function(){
+    it('should get todo doc', function(done){
+        request(app).get('/api/todos/'+mockTodos[0]._id.toHexString())
+            .expect(200)
+            .expect(function(res){
+                expect(res.body.todo._id).toBe(mockTodos[0]._id.toHexString());
+            }).end(done);
+    });
+
+    it('should return invalid id', function(done){
+        request(app).get('/api/todos/555')
+            .expect(404)
+            .expect(function(res){
+                expect(res.body.err).toBe("ID is not valid.");
+            }).end(done);
+    });
+
+    it('should return todo not found', function(done){
+        // mockTodos[0]._id
+        var hexId = new ObjectId().toHexString();
+        request(app).get('/api/todos/'+hexId)
+            .expect(404)
+            .expect(function(res){
+                expect(res.body.err).toBe("ID is not found.");
             }).end(done);
     });
 });
