@@ -51,6 +51,24 @@ app.post('/api/todos', function(req, res){
     });
 });
 
+app.delete('/api/todos/:id', function(req, res){
+    return new Promise(function(resolve, reject){
+        if(ObjectId.isValid(req.params.id)){
+            resolve();
+        }else{
+            reject('ID is not valid.');
+        }
+    }).then(function(){
+        return Todo.findByIdAndRemove(req.params.id);
+    }).then(function(todo){
+        return (todo) ? Promise.resolve(todo) : Promise.reject('ID is not found.');
+    }).then(function(todo){
+        res.send({todo: todo});
+    }).catch(function(err){
+        res.status(404).send({err: err});
+    });
+});
+
 app.listen(port, function(){
     console.log(`Started Server on port ${port}`);
 });

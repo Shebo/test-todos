@@ -101,3 +101,31 @@ describe('GET /api/todos/:id', function(){
             }).end(done);
     });
 });
+
+describe('DELETE /api/todos/:id', function(){
+    it('should delete todo doc', function(done){
+        request(app).delete('/api/todos/'+mockTodos[0]._id.toHexString())
+            .expect(200)
+            .expect(function(res){
+                expect(res.body.todo._id).toBe(mockTodos[0]._id.toHexString());
+            }).end(done);
+    });
+
+    it('should return invalid id', function(done){
+        request(app).delete('/api/todos/555')
+            .expect(404)
+            .expect(function(res){
+                expect(res.body.err).toBe("ID is not valid.");
+            }).end(done);
+    });
+
+    it('should return todo not found', function(done){
+        // mockTodos[0]._id
+        var hexId = new ObjectId().toHexString();
+        request(app).delete('/api/todos/'+hexId)
+            .expect(404)
+            .expect(function(res){
+                expect(res.body.err).toBe("ID is not found.");
+            }).end(done);
+    });
+});
