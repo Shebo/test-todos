@@ -2,6 +2,7 @@ const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 
+require("../tests/server.test.js");
 require("../env-config");
 
 var {mongoose, mongoose: {Types: {ObjectId}}} = require('./db/mongoose');
