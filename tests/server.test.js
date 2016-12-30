@@ -13,7 +13,9 @@ var mockTodos = [
     },
     {
         _id: ObjectId(),
-        text: 'Second Test Todo'
+        text: 'Second Test Todo',
+        completed: true,
+        completedAt: 666
     }
 ];
 
@@ -95,6 +97,50 @@ describe('GET /api/todos/:id', function(){
         // mockTodos[0]._id
         var hexId = new ObjectId().toHexString();
         request(app).get('/api/todos/'+hexId)
+            .expect(404)
+            .expect(function(res){
+                expect(res.body.err).toBe("ID is not found.");
+            }).end(done);
+    });
+});
+
+describe('PATCH /api/todos/:id', function(){
+    it('should update todo doc', function(done){
+        var updatedText = 'updated text';
+        request(app).patch('/api/todos/'+mockTodos[0]._id.toHexString()).send({text: updatedText, completed: true})
+            .expect(200)
+            .expect(function(res){
+                expect(res.body.todo._id).toBe(mockTodos[0]._id.toHexString());
+                expect(res.body.todo.text).toBe(updatedText);
+                expect(res.body.todo.completed).toBe(true);
+                expect(res.body.todo.completedAt).toBeA('number');
+            }).end(done);
+    });
+
+    it('should clear completedAt when todo is not completed', function(done){
+        var updatedText = 'updated text2';
+        request(app).patch('/api/todos/'+mockTodos[1]._id.toHexString()).send({text: updatedText, completed: false})
+            .expect(200)
+            .expect(function(res){
+                expect(res.body.todo._id).toBe(mockTodos[1]._id.toHexString());
+                expect(res.body.todo.text).toBe(updatedText);
+                expect(res.body.todo.completed).toBe(false);
+                expect(res.body.todo.completedAt).toNotExist();
+            }).end(done);
+    });
+
+    it('should return invalid id', function(done){
+        request(app).patch('/api/todos/555')
+            .expect(404)
+            .expect(function(res){
+                expect(res.body.err).toBe("ID is not valid.");
+            }).end(done);
+    });
+
+    it('should return todo not found', function(done){
+        // mockTodos[0]._id
+        var hexId = new ObjectId().toHexString();
+        request(app).patch('/api/todos/'+hexId)
             .expect(404)
             .expect(function(res){
                 expect(res.body.err).toBe("ID is not found.");
