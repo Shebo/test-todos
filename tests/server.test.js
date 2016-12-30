@@ -108,7 +108,16 @@ describe('DELETE /api/todos/:id', function(){
             .expect(200)
             .expect(function(res){
                 expect(res.body.todo._id).toBe(mockTodos[0]._id.toHexString());
-            }).end(done);
+            }).end(function(err, res){
+                if(err) return done(err);
+
+                Todo.findById(mockTodos[0]._id.toHexString()).then(function(todo){
+                    expect(todo).toNotExist();
+                    done();
+                }).catch(function(err){
+                    done(err);
+                });
+            });
     });
 
     it('should return invalid id', function(done){
