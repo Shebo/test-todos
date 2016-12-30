@@ -1,12 +1,13 @@
-var express = require('express');
-var bodyParser = require('body-parser');
+const _ = require('lodash');
+const express = require('express');
+const bodyParser = require('body-parser');
 
 var {mongoose, mongoose: {Types: {ObjectId}}} = require('./db/mongoose');
 var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
 
-var app = express();
 const port = process.env.PORT || 3000;
+var app = express();
 
 app.use(bodyParser.json());
 
@@ -48,6 +49,32 @@ app.post('/api/todos', function(req, res){
         res.send(todo);
     }).catch(function(err){
         res.status(400).send({err: err});
+    });
+});
+
+app.patch('/api/todos/:id', function(req, res){
+    return new Promise(function(resolve, reject){
+        if(ObjectId.isValid(req.params.id)){
+            resolve();
+        }else{
+            reject('ID is not valid.');
+        }
+    }).then(function(){
+        var completedAt = null;
+        if(_.isBoolean(req.body.completed) && req.body.completed ){
+            completedAt = new Date().getTime();
+        }
+        return Todo.findByIdAndUpdate(req.params.id, {
+            text: req.body.text,
+            completed: req.body.completed,
+            completedAt: completedAt
+        }, {new: true});
+    }).then(function(todo){
+        return (todo) ? Promise.resolve(todo) : Promise.reject('ID is not found.');
+    }).then(function(todo){
+        res.send({todo: todo});
+    }).catch(function(err){
+        res.status(404).send({err: err});
     });
 });
 
