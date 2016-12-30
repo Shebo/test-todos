@@ -3,8 +3,8 @@ const request = require('supertest');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 var {app} = require('../server');
-var {Todo} = require('../server/models/Todo');
-var {User} = require('../server/models/User');
+var {Todo} = require('../server/models/todo');
+var {User} = require('../server/models/user');
 
 var mockTodos = [
     {
