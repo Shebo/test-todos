@@ -75,18 +75,6 @@ UserSchema.statics.findByToken = function(token){
     }).catch(function(err){
         return Promise.reject(err);
     });
-
-    // try{
-    //     decoded = jwt.verify(token, 'devil');
-    // }catch(e){
-    //     return Promise.reject('Token is not valid');
-    // }
-
-    // return this.findOne({
-    //     _id: decoded._id,
-    //     'tokens.access': 'auth',
-    //     'tokens.token': token,
-    // });
 };
 
 UserSchema.pre('save', function(next){

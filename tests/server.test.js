@@ -5,27 +5,10 @@ const ObjectId = require('mongoose').Types.ObjectId;
 var {app} = require('../server');
 var {Todo} = require('../server/models/todo');
 var {User} = require('../server/models/user');
+var {mockTodos, populateTodos, mockUsers, populateUsers} = require('./seed');
 
-var mockTodos = [
-    {
-        _id: ObjectId(),
-        text: 'First Test Todo'
-    },
-    {
-        _id: ObjectId(),
-        text: 'Second Test Todo',
-        completed: true,
-        completedAt: 666
-    }
-];
-
-beforeEach(function(done){
-    Todo.remove({}, function(){
-        return Todo.insertMany(mockTodos).then(function(){
-            done();
-        });
-    });
-});
+beforeEach(populateTodos);
+beforeEach(populateUsers);
 
 describe('POST /api/todos', function(){
     it('should create a new todo', function(done){
@@ -182,5 +165,67 @@ describe('DELETE /api/todos/:id', function(){
             .expect(function(res){
                 expect(res.body.err).toBe("ID is not found.");
             }).end(done);
+    });
+});
+
+describe('GET /api/users/me', function(){
+    it('should get my user if authenticated', function(done){
+        request(app).get('/api/users/me').set('x-auth', mockUsers[0].tokens[0].token)
+            .expect(200)
+            .expect(function(res){
+                expect(res.body.user._id).toBe(mockUsers[0]._id.toHexString());
+                expect(res.body.user.email).toBe(mockUsers[0].email);
+            }).end(done);
+    });
+
+    it('should return 401 if not authenticated', function(done){
+        request(app).get('/api/users/me')
+            .expect(401)
+            .expect(function(res){
+                expect(res.body.err).toBe('Token is not valid');
+            }).end(done);
+    });
+});
+
+describe('POST /api/users', function(){
+    it('should create a new user', function(done){
+        var email = "example@example.com";
+        var password = "testPassword";
+        request(app).post('/api/users').send({email: email, password: password})
+            .expect(200)
+            .expect(function(res){
+                expect(res.header['x-auth']).toExist();
+                expect(res.body.user._id).toExist();
+                expect(res.body.user.email).toBe(email);
+            })
+            .end(function(err, res){
+                if(err) return done(err);
+
+                User.findOne({email: email}).then(function(user){
+                    expect(user).toExist();
+                    expect(user.email).toBe(email);
+                    expect(user.password).toNotBe(password);
+                    done();
+                }).catch(function(err){
+                    done(err);
+                });
+            });
+    });
+
+
+    it('should return validation errors if request invalid', function(done){
+        var email = "example@example";
+        var password = "123";
+        request(app).post('/api/users').send({email: email, password: password})
+            .expect(400)
+            .end(done);
+    });
+
+    it('should not create user if email in use', function(done){
+        var email = mockUsers[0].email;
+        var password = "123";
+        request(app).post('/api/users').send({email: email, password: password})
+            .expect(400)
+            .end(done);
     });
 });

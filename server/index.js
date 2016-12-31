@@ -105,14 +105,14 @@ app.post('/api/users', function(req, res){
     user.save().then(function(){
         return user.generateAuthToken();
     }).then(function(token){
-        res.header('x-auth', token).send(user);
+        res.header('x-auth', token).send({user: user});
     }).catch(function(err){
         res.status(400).send({err: err});
     });
 });
 
 app.get('/api/users/me', authenticate, function(req, res){
-    res.send(req.user);
+    res.send({user: req.user});
 });
 
 app.listen(port, function(){
