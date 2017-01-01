@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const bcrypt = require('bcryptjs');
 const express = require('express');
 const bodyParser = require('body-parser');
 
@@ -113,6 +114,26 @@ app.post('/api/users', function(req, res){
 
 app.get('/api/users/me', authenticate, function(req, res){
     res.send({user: req.user});
+});
+
+app.post('/api/users/login', function(req, res){
+    var body = _.pick(req.body, ['email', 'password']);
+    
+    User.findByCredentials(body.email, body.password).then(function(user){
+        return user.generateAuthToken().then(function(token){
+            res.header('x-auth', token).send({user: user});
+        });
+    }).catch(function(err){
+        res.status(400).send({err: err});
+    });
+});
+
+app.delete('/api/users/me/token', authenticate, function(req, res){
+    req.user.removeToken(req.token).then(function(){
+        res.status(200).send();
+    }).catch(function(){
+        res.status(400).send();
+    });
 });
 
 app.listen(port, function(){

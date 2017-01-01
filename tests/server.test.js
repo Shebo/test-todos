@@ -7,8 +7,8 @@ var {Todo} = require('../server/models/todo');
 var {User} = require('../server/models/user');
 var {mockTodos, populateTodos, mockUsers, populateUsers} = require('./seed');
 
-beforeEach(populateTodos);
 beforeEach(populateUsers);
+beforeEach(populateTodos);
 
 describe('POST /api/todos', function(){
     it('should create a new todo', function(done){
@@ -25,9 +25,7 @@ describe('POST /api/todos', function(){
                     expect(todos.length).toBe(1);
                     expect(todos[0].text).toBe(text);
                     done();
-                }).catch(function(err){
-                    done(err);
-                });
+                }).catch(done);
             });
     });
 
@@ -41,9 +39,7 @@ describe('POST /api/todos', function(){
                 Todo.find().then(function(todos){
                     expect(todos.length).toBe(2);
                     done();
-                }).catch(function(err){
-                    done(err);
-                });
+                }).catch(done);
             });
 
     });
@@ -143,9 +139,7 @@ describe('DELETE /api/todos/:id', function(){
                 Todo.findById(mockTodos[0]._id.toHexString()).then(function(todo){
                     expect(todo).toNotExist();
                     done();
-                }).catch(function(err){
-                    done(err);
-                });
+                }).catch(done);
             });
     });
 
@@ -206,9 +200,7 @@ describe('POST /api/users', function(){
                     expect(user.email).toBe(email);
                     expect(user.password).toNotBe(password);
                     done();
-                }).catch(function(err){
-                    done(err);
-                });
+                }).catch(done);
             });
     });
 
@@ -227,5 +219,63 @@ describe('POST /api/users', function(){
         request(app).post('/api/users').send({email: email, password: password})
             .expect(400)
             .end(done);
+    });
+});
+
+describe('POST /api/users/login', function(){
+    it('should login user and return auth token', function(done){
+        request(app).post('/api/users/login').send(mockUsers[0])
+            .expect(200)
+            .expect(function(res){
+                expect(res.header['x-auth']).toExist();
+                expect(res.body.user._id).toExist();
+                expect(res.body.user.email).toBe(mockUsers[0].email);
+            })
+            .end(function(err, res){
+                if(err) return done(err);
+
+                User.findById(mockUsers[0]._id).then(function(user){
+                    expect(user).toExist();
+                    expect(user.tokens.pop()).toInclude({
+                        access: 'auth',
+                        token: res.headers['x-auth']
+                    });
+                    done();
+                }).catch(done);
+            });
+    });
+
+    it('should reject invalid login', function(done){
+        request(app).post('/api/users/login').send({email: mockUsers[1].email, password: mockUsers[1].password+'a'})
+            .expect(400)
+            .expect(function(res){
+                expect(res.header['x-auth']).toNotExist();
+                expect(res.body.err).toBe('Password Don\'t Match Email');
+            })
+            .end(function(err, res){
+                if(err) return done(err);
+
+                User.findById(mockUsers[1]._id).then(function(user){
+                    expect(user).toExist();
+                    expect(user.tokens.length).toBe(0);
+                    done();
+                }).catch(done);
+            });
+    });
+});
+
+describe('DELETE /api/users/me/token', function(){
+    it('should remove auth token on logout', function(done){
+        request(app).delete('/api/users/me/token').set('x-auth', mockUsers[0].tokens[0].token)
+            .expect(200)
+            .end(function(err, res){
+                if(err) return done(err);
+
+                User.findById(mockUsers[0]._id).then(function(user){
+                    expect(user).toExist();
+                    expect(user.tokens.length).toBe(0);
+                    done();
+                }).catch(done);
+            });
     });
 });

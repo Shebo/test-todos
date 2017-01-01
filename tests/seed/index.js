@@ -38,10 +38,9 @@ const mockTodos = [
 ];
 
 const populateUsers = function(done){
-    User.remove({}, function(){
+    User.remove({}).then(function(){
         var userOne = new User(mockUsers[0]).save();
         var userTwo = new User(mockUsers[1]).save();
-
         return Promise.all([userOne, userTwo]);
     }).then(function(){
         done();
@@ -49,10 +48,10 @@ const populateUsers = function(done){
 };
 
 const populateTodos = function(done){
-    Todo.remove({}, function(){
-        return Todo.insertMany(mockTodos).then(function(){
-            done();
-        });
+    Todo.remove({}).then(function(){
+        return Todo.insertMany(mockTodos);
+    }).then(function(){
+        done();
     });
 };
 

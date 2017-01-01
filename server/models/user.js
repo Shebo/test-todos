@@ -51,6 +51,21 @@ UserSchema.methods.generateAuthToken = function(){
     });
 };
 
+UserSchema.methods.removeToken = function(token){
+    this.tokens.push({
+        access: 'auth',
+        token: token
+    });
+
+    return this.update({
+        $pull: {
+            tokens: {
+                token: token
+            }
+        }
+    });
+};
+
 UserSchema.statics.findByToken = function(token){
     var self = this;
 
@@ -74,6 +89,24 @@ UserSchema.statics.findByToken = function(token){
         return (user) ? Promise.resolve(user) : Promise.reject('User not found');
     }).catch(function(err){
         return Promise.reject(err);
+    });
+};
+
+UserSchema.statics.findByCredentials = function(email, password){
+    var self = this;
+
+    return self.findOne({email: email}).then(function(user){
+        if(!user) return Promise.reject('No User is using this email');
+
+        return new Promise(function(resolve, reject){
+            bcrypt.compare(password, user.password, function(err, res){
+                if(err || !res){
+                    reject('Password Don\'t Match Email');
+                }else{
+                    resolve(user);
+                }
+            });
+        });
     });
 };
 
