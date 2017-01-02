@@ -16,8 +16,10 @@ var app = express();
 app.use(bodyParser.json());
 
 // get all todos
-app.get('/api/todos', function(req, res){
-    Todo.find().then(function(todos){
+app.get('/api/todos', authenticate, function(req, res){
+    Todo.find({
+        _userId: req.user._id
+    }).then(function(todos){
         res.send({todos: todos});
     }).catch(function(err){
         res.status(400).send(err);
@@ -25,7 +27,7 @@ app.get('/api/todos', function(req, res){
 });
 
 // get a todo by it's ID
-app.get('/api/todos/:id', function(req, res){
+app.get('/api/todos/:id', authenticate, function(req, res){
 
     return new Promise(function(resolve, reject){
         if(ObjectId.isValid(req.params.id)){
@@ -34,7 +36,10 @@ app.get('/api/todos/:id', function(req, res){
             reject('ID is not valid.');
         }
     }).then(function(){
-        return Todo.findById(req.params.id);
+        return Todo.findOne({
+            _id: req.params.id,
+            _userId: req.user._id
+        });
     }).then(function(todo){
         return (todo) ? Promise.resolve(todo) : Promise.reject('ID is not found.');
     }).then(function(todo){
@@ -44,9 +49,10 @@ app.get('/api/todos/:id', function(req, res){
     });
 });
 
-app.post('/api/todos', function(req, res){
+app.post('/api/todos', authenticate, function(req, res){
     var newTodo = new Todo({
-        text: req.body.text
+        text: req.body.text,
+        _userId: req.user._id
     });
     
     newTodo.save().then(function(todo){
@@ -56,7 +62,7 @@ app.post('/api/todos', function(req, res){
     });
 });
 
-app.patch('/api/todos/:id', function(req, res){
+app.patch('/api/todos/:id', authenticate, function(req, res){
     return new Promise(function(resolve, reject){
         if(ObjectId.isValid(req.params.id)){
             resolve();
@@ -68,7 +74,10 @@ app.patch('/api/todos/:id', function(req, res){
         if(_.isBoolean(req.body.completed) && req.body.completed ){
             completedAt = new Date().getTime();
         }
-        return Todo.findByIdAndUpdate(req.params.id, {
+        return Todo.findOneAndUpdate({
+            _id: req.params.id,
+            _userId: req.user.id
+        }, {
             text: req.body.text,
             completed: req.body.completed,
             completedAt: completedAt
@@ -82,7 +91,7 @@ app.patch('/api/todos/:id', function(req, res){
     });
 });
 
-app.delete('/api/todos/:id', function(req, res){
+app.delete('/api/todos/:id', authenticate, function(req, res){
     return new Promise(function(resolve, reject){
         if(ObjectId.isValid(req.params.id)){
             resolve();
@@ -90,7 +99,10 @@ app.delete('/api/todos/:id', function(req, res){
             reject('ID is not valid.');
         }
     }).then(function(){
-        return Todo.findByIdAndRemove(req.params.id);
+        return Todo.findOneAndRemove({
+            _id: req.params.id,
+            _userId: req.user._id
+        });
     }).then(function(todo){
         return (todo) ? Promise.resolve(todo) : Promise.reject('ID is not found.');
     }).then(function(todo){

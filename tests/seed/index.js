@@ -15,25 +15,30 @@ const mockUsers = [
     {
         _id: new ObjectId(),
         email: 'test1@example.com',
-        password: 'userTwoPass'
+        password: 'userTwoPass',
+        tokens: []
     }
 ];
 
-mockUsers[0].tokens.push({
-    access: 'auth',
-    token: jwt.sign({_id: mockUsers[0]._id, access: 'auth'}, 'devil').toString()
+mockUsers.forEach(function (mockUser) {
+    mockUser.tokens.push({
+        access: 'auth',
+        token: jwt.sign({_id: mockUser._id, access: 'auth'}, 'devil').toString()
+    });
 });
 
 const mockTodos = [
     {
         _id: ObjectId(),
-        text: 'First Test Todo'
+        text: 'First Test Todo',
+        _userId: mockUsers[0]._id
     },
     {
         _id: ObjectId(),
         text: 'Second Test Todo',
         completed: true,
-        completedAt: 666
+        completedAt: 666,
+        _userId: mockUsers[1]._id
     }
 ];
 

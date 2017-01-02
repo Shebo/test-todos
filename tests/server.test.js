@@ -13,7 +13,7 @@ beforeEach(populateTodos);
 describe('POST /api/todos', function(){
     it('should create a new todo', function(done){
         var text = "todo test";
-        request(app).post('/api/todos').send({text: text})
+        request(app).post('/api/todos').set('x-auth', mockUsers[0].tokens[0].token).send({text: text})
             .expect(200)
             .expect(function(res){
                 expect(res.body.text).toBe(text);
@@ -31,7 +31,7 @@ describe('POST /api/todos', function(){
 
 
     it('should not create a new todo', function(done){
-        request(app).post('/api/todos').send({})
+        request(app).post('/api/todos').set('x-auth', mockUsers[0].tokens[0].token).send({})
             .expect(400)
             .end(function(err, res){
                 if(err) return done(err);
@@ -47,38 +47,44 @@ describe('POST /api/todos', function(){
 
 describe('GET /api/todos', function(){
     it('should get all todos', function(done){
-        request(app).get('/api/todos')
+        request(app).get('/api/todos').set('x-auth', mockUsers[0].tokens[0].token)
             .expect(200)
             .expect(function(res){
-                expect(res.body.todos.length).toBe(2);
+                expect(res.body.todos.length).toBe(1);
             }).end(done);
     });
 });
 
 describe('GET /api/todos/:id', function(){
     it('should get todo doc', function(done){
-        request(app).get('/api/todos/'+mockTodos[0]._id.toHexString())
+        request(app).get('/api/todos/'+mockTodos[0]._id.toHexString()).set('x-auth', mockUsers[0].tokens[0].token)
             .expect(200)
             .expect(function(res){
                 expect(res.body.todo._id).toBe(mockTodos[0]._id.toHexString());
             }).end(done);
     });
 
-    it('should return invalid id', function(done){
-        request(app).get('/api/todos/555')
+    it('should\'nt get todo doc created by other user', function(done){
+        request(app).get('/api/todos/'+mockTodos[1]._id.toHexString()).set('x-auth', mockUsers[0].tokens[0].token)
             .expect(404)
-            .expect(function(res){
-                expect(res.body.err).toBe("ID is not valid.");
-            }).end(done);
+            .end(done);
     });
 
     it('should return todo not found', function(done){
         // mockTodos[0]._id
         var hexId = new ObjectId().toHexString();
-        request(app).get('/api/todos/'+hexId)
+        request(app).get('/api/todos/'+hexId).set('x-auth', mockUsers[0].tokens[0].token)
             .expect(404)
             .expect(function(res){
                 expect(res.body.err).toBe("ID is not found.");
+            }).end(done);
+    });
+
+    it('should return invalid id', function(done){
+        request(app).get('/api/todos/555').set('x-auth', mockUsers[0].tokens[0].token)
+            .expect(404)
+            .expect(function(res){
+                expect(res.body.err).toBe("ID is not valid.");
             }).end(done);
     });
 });
@@ -86,7 +92,7 @@ describe('GET /api/todos/:id', function(){
 describe('PATCH /api/todos/:id', function(){
     it('should update todo doc', function(done){
         var updatedText = 'updated text';
-        request(app).patch('/api/todos/'+mockTodos[0]._id.toHexString()).send({text: updatedText, completed: true})
+        request(app).patch('/api/todos/'+mockTodos[0]._id.toHexString()).set('x-auth', mockUsers[0].tokens[0].token).send({text: updatedText, completed: true})
             .expect(200)
             .expect(function(res){
                 expect(res.body.todo._id).toBe(mockTodos[0]._id.toHexString());
@@ -96,9 +102,16 @@ describe('PATCH /api/todos/:id', function(){
             }).end(done);
     });
 
+    it('should\'nt update todo doc of another user', function(done){
+        var updatedText = 'updated text';
+        request(app).patch('/api/todos/'+mockTodos[0]._id.toHexString()).set('x-auth', mockUsers[1].tokens[0].token).send({text: updatedText, completed: true})
+            .expect(404)
+            .end(done);
+    });
+
     it('should clear completedAt when todo is not completed', function(done){
         var updatedText = 'updated text2';
-        request(app).patch('/api/todos/'+mockTodos[1]._id.toHexString()).send({text: updatedText, completed: false})
+        request(app).patch('/api/todos/'+mockTodos[1]._id.toHexString()).set('x-auth', mockUsers[1].tokens[0].token).send({text: updatedText, completed: false})
             .expect(200)
             .expect(function(res){
                 expect(res.body.todo._id).toBe(mockTodos[1]._id.toHexString());
@@ -109,7 +122,7 @@ describe('PATCH /api/todos/:id', function(){
     });
 
     it('should return invalid id', function(done){
-        request(app).patch('/api/todos/555')
+        request(app).patch('/api/todos/555').set('x-auth', mockUsers[0].tokens[0].token)
             .expect(404)
             .expect(function(res){
                 expect(res.body.err).toBe("ID is not valid.");
@@ -117,9 +130,8 @@ describe('PATCH /api/todos/:id', function(){
     });
 
     it('should return todo not found', function(done){
-        // mockTodos[0]._id
         var hexId = new ObjectId().toHexString();
-        request(app).patch('/api/todos/'+hexId)
+        request(app).patch('/api/todos/'+hexId).set('x-auth', mockUsers[0].tokens[0].token)
             .expect(404)
             .expect(function(res){
                 expect(res.body.err).toBe("ID is not found.");
@@ -129,7 +141,7 @@ describe('PATCH /api/todos/:id', function(){
 
 describe('DELETE /api/todos/:id', function(){
     it('should delete todo doc', function(done){
-        request(app).delete('/api/todos/'+mockTodos[0]._id.toHexString())
+        request(app).delete('/api/todos/'+mockTodos[0]._id.toHexString()).set('x-auth', mockUsers[0].tokens[0].token)
             .expect(200)
             .expect(function(res){
                 expect(res.body.todo._id).toBe(mockTodos[0]._id.toHexString());
@@ -143,8 +155,21 @@ describe('DELETE /api/todos/:id', function(){
             });
     });
 
+    it('should\'nt delete todo doc created by another user', function(done){
+        request(app).delete('/api/todos/'+mockTodos[1]._id.toHexString()).set('x-auth', mockUsers[0].tokens[0].token)
+            .expect(404)
+            .end(function(err, res){
+                if(err) return done(err);
+
+                Todo.findById(mockTodos[0]._id.toHexString()).then(function(todo){
+                    expect(todo).toExist();
+                    done();
+                }).catch(done);
+            });
+    });
+
     it('should return invalid id', function(done){
-        request(app).delete('/api/todos/555')
+        request(app).delete('/api/todos/555').set('x-auth', mockUsers[0].tokens[0].token)
             .expect(404)
             .expect(function(res){
                 expect(res.body.err).toBe("ID is not valid.");
@@ -152,9 +177,8 @@ describe('DELETE /api/todos/:id', function(){
     });
 
     it('should return todo not found', function(done){
-        // mockTodos[0]._id
         var hexId = new ObjectId().toHexString();
-        request(app).delete('/api/todos/'+hexId)
+        request(app).delete('/api/todos/'+hexId).set('x-auth', mockUsers[0].tokens[0].token)
             .expect(404)
             .expect(function(res){
                 expect(res.body.err).toBe("ID is not found.");
@@ -257,7 +281,7 @@ describe('POST /api/users/login', function(){
 
                 User.findById(mockUsers[1]._id).then(function(user){
                     expect(user).toExist();
-                    expect(user.tokens.length).toBe(0);
+                    expect(user.tokens.length).toBe(1);
                     done();
                 }).catch(done);
             });
