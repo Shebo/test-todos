@@ -23,7 +23,7 @@ const mockUsers = [
 mockUsers.forEach(function (mockUser) {
     mockUser.tokens.push({
         access: 'auth',
-        token: jwt.sign({_id: mockUser._id, access: 'auth'}, 'devil').toString()
+        token: jwt.sign({_id: mockUser._id, access: 'auth'}, process.env.JWT_SECRET).toString()
     });
 });
 
